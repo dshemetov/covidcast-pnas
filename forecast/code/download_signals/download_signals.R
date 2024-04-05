@@ -4,6 +4,9 @@ library(covidcast)
 library(evalcast)
 library(here)
 
+# Set the Delphi API key from an environment variable
+options(covidcast.auth = Sys.getenv("DELPHI_EPIDATA_KEY"))
+
 # Parameters for determining which data (and how much) we need --------
 geo_type <- "hrr"
 ntrain = 21
@@ -68,7 +71,7 @@ start_day_download <- function(forecast_date) {
 
 signals_df = honest_as_of_signals
 offline_signal_dir = here("data", "offline_signals", "honest_as_of")
-if (!dir.exists(offline_signal_dir)) dir.create(offline_signal_dir)
+if (!dir.exists(offline_signal_dir)) dir.create(offline_signal_dir, recursive = TRUE)
 for (idx in 1:nrow(honest_as_of_signals)) {
   forecast_dates <- seq(as.Date(signals_df$start_forecast_date[idx]),
                         as.Date(end_forecast_date), by = "day")
@@ -76,7 +79,6 @@ for (idx in 1:nrow(honest_as_of_signals)) {
     data_source = signals_df$data_source[idx],
     signal = signals_df$signal[idx],
     start_day = list(start_day_download),
-    as_of = list(function(x) x),
     geo_values='*',
     geo_type='hrr')
   preds = get_predictions(signal_downloader,
@@ -86,7 +88,8 @@ for (idx in 1:nrow(honest_as_of_signals)) {
                           incidence_period = 'day',
                           forecaster_args = list(
                             offline_signal_dir=offline_signal_dir
-                          )
+                          ),
+                          honest_as_of = TRUE
   )
 }
 
@@ -113,11 +116,11 @@ for (idx in 1:nrow(dishonest_as_of_signals)) {
                           forecast_dates,
                           incidence_period='day',
                           forecaster_args=list(
-                              offline_signal_dir=offline_signal_dir
-                              )
+                            offline_signal_dir=offline_signal_dir
+                          ),
+                          honest_as_of = FALSE
                           )
 }
-
 
 
 # Copy finalized google to honest -----------------------------------------
